@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mycelial Cognition — Generative Art Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --anthropic-dark: #141413;
+            --anthropic-light: #faf9f5;
+            --anthropic-mid-gray: #b0aea5;
+            --anthropic-light-gray: #e8e6dc;
+            --anthropic-orange: #d97757;
+            --anthropic-blue: #6a9bcc;
+            --anthropic-green: #788c5d;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--anthropic-light) 0%, #f5f3ee 100%);
+            min-height: 100vh;
+            color: var(--anthropic-dark);
+        }
+        .container { display: flex; min-height: 100vh; padding: 20px; gap: 20px; }
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.1);
+            overflow-y: auto;
+            max-height: calc(100vh - 40px);
+        }
+        .sidebar h1 {
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .sidebar .subtitle {
+            color: var(--anthropic-mid-gray);
+            font-size: 13px;
+            margin-bottom: 28px;
+            line-height: 1.5;
+            font-style: italic;
+        }
+        .control-section { margin-bottom: 28px; }
+        .control-section h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .control-section h3::before {
+            content: '•';
+            color: var(--anthropic-orange);
+            font-weight: bold;
+        }
+        .seed-input {
+            width: 100%;
+            background: var(--anthropic-light);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border: 1px solid var(--anthropic-light-gray);
+            text-align: center;
+        }
+        .seed-input:focus {
+            outline: none;
+            border-color: var(--anthropic-orange);
+            box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.1);
+            background: white;
+        }
+        .seed-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .button {
+            background: var(--anthropic-light);
+            border: 1px solid var(--anthropic-light-gray);
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--anthropic-dark);
+        }
+        .button:hover {
+            background: white;
+            border-color: var(--anthropic-orange);
+            color: var(--anthropic-orange);
+        }
+        .button.primary {
+            background: var(--anthropic-orange);
+            border-color: var(--anthropic-orange);
+            color: white;
+        }
+        .button.primary:hover {
+            background: #c86641;
+            border-color: #c86641;
+            color: white;
+        }
+        .control-group { margin-bottom: 18px; }
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 7px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: var(--anthropic-light-gray);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #c86641;
+        }
+        .slider-container input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--anthropic-orange);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+        .value-display {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            min-width: 56px;
+            text-align: right;
+        }
+        .color-group { margin-bottom: 14px; }
+        .color-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+            margin-bottom: 6px;
+        }
+        .color-picker-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .color-picker-container input[type="color"] {
+            width: 36px;
+            height: 32px;
+            border: 1px solid var(--anthropic-light-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            background: none;
+            padding: 2px;
+        }
+        .color-value {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: var(--anthropic-mid-gray);
+        }
+        .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .button-full { grid-column: 1 / -1; }
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(20, 20, 19, 0.08);
+            overflow: hidden;
+            position: relative;
+        }
+        #canvas-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            max-width: 100%;
+            max-height: calc(100vh - 60px);
+            border-radius: 8px;
+            display: block;
+        }
+        .loading {
+            color: var(--anthropic-mid-gray);
+            font-style: italic;
+        }
+        .stat-line {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: var(--anthropic-mid-gray);
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <h1>Mycelial Cognition</h1>
+            <p class="subtitle">Rozproszone myślenie zapisane jako stygmergiczna sieć strzępek.</p>
+
+            <!-- Seed Section -->
+            <div class="control-section">
+                <h3>Ziarno</h3>
+                <input type="number" class="seed-input" id="seed-input" value="42" min="1" onchange="updateSeed()">
+                <div class="seed-controls">
+                    <button class="button" onclick="previousSeed()">‹ Poprzednie</button>
+                    <button class="button" onclick="nextSeed()">Następne ›</button>
+                    <button class="button" onclick="randomSeedAndUpdate()">Losowe</button>
+                    <button class="button primary" onclick="initializeSystem()">Regeneruj</button>
+                </div>
+                <div class="stat-line" id="stats">Strzępki: 0 · Anastomozy: 0</div>
+            </div>
+
+            <!-- Parameters -->
+            <div class="control-section">
+                <h3>Parametry</h3>
+
+                <div class="control-group">
+                    <label>Liczba początkowych strzępek</label>
+                    <div class="slider-container">
+                        <input type="range" id="initialTips" min="3" max="40" step="1" value="12" oninput="updateParam('initialTips', this.value)">
+                        <span class="value-display" id="initialTips-value">12</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Skala pola odżywczego</label>
+                    <div class="slider-container">
+                        <input type="range" id="nutrientScale" min="0.001" max="0.012" step="0.0005" value="0.004" oninput="updateParam('nutrientScale', this.value)">
+                        <span class="value-display" id="nutrientScale-value">0.004</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Tempo wzrostu</label>
+                    <div class="slider-container">
+                        <input type="range" id="growthRate" min="0.4" max="2.5" step="0.1" value="1.2" oninput="updateParam('growthRate', this.value)">
+                        <span class="value-display" id="growthRate-value">1.2</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Prawdopodobieństwo rozgałęzienia</label>
+                    <div class="slider-container">
+                        <input type="range" id="branchProb" min="0.001" max="0.06" step="0.001" value="0.018" oninput="updateParam('branchProb', this.value)">
+                        <span class="value-display" id="branchProb-value">0.018</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Promień anastomozy</label>
+                    <div class="slider-container">
+                        <input type="range" id="anastomosisRadius" min="3" max="30" step="1" value="10" oninput="updateParam('anastomosisRadius', this.value)">
+                        <span class="value-display" id="anastomosisRadius-value">10</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Maksymalny wiek strzępki</label>
+                    <div class="slider-container">
+                        <input type="range" id="maxAge" min="80" max="900" step="10" value="320" oninput="updateParam('maxAge', this.value)">
+                        <span class="value-display" id="maxAge-value">320</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Krzywizna (curl)</label>
+                    <div class="slider-container">
+                        <input type="range" id="curlStrength" min="0" max="1.5" step="0.05" value="0.55" oninput="updateParam('curlStrength', this.value)">
+                        <span class="value-display" id="curlStrength-value">0.55</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Grubość strzępki</label>
+                    <div class="slider-container">
+                        <input type="range" id="strokeWeight" min="0.3" max="3" step="0.1" value="0.9" oninput="updateParam('strokeWeight', this.value)">
+                        <span class="value-display" id="strokeWeight-value">0.9</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colors -->
+            <div class="control-section">
+                <h3>Paleta</h3>
+
+                <div class="color-group">
+                    <label>Tło substratu</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="bgColor" value="#0e1418" onchange="updateColor('bgColor', this.value)">
+                        <span class="color-value" id="bgColor-value">#0e1418</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Młode strzępki</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color1" value="#d97757" onchange="updateColor('color1', this.value)">
+                        <span class="color-value" id="color1-value">#d97757</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Dojrzałe strzępki</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color2" value="#e8c468" onchange="updateColor('color2', this.value)">
+                        <span class="color-value" id="color2-value">#e8c468</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Pamięć (głębokie ślady)</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color3" value="#6a9bcc" onchange="updateColor('color3', this.value)">
+                        <span class="color-value" id="color3-value">#6a9bcc</span>
+                    </div>
+                </div>
+
+                <div class="color-group">
+                    <label>Węzły anastomozy</label>
+                    <div class="color-picker-container">
+                        <input type="color" id="color4" value="#f3eada" onchange="updateColor('color4', this.value)">
+                        <span class="color-value" id="color4-value">#f3eada</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="control-section">
+                <h3>Akcje</h3>
+                <div class="button-row">
+                    <button class="button" onclick="resetParameters()">Reset</button>
+                    <button class="button" onclick="togglePause()" id="pauseBtn">Pauza</button>
+                    <button class="button button-full primary" onclick="downloadPNG()">Pobierz PNG</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="canvas-area">
+            <div id="canvas-container">
+                <div class="loading">Inicjalizacja substratu obliczeniowego…</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════════════
+        // MYCELIAL COGNITION — PARAMETERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        let params = {
+            seed: 42,
+            initialTips: 12,
+            nutrientScale: 0.004,
+            growthRate: 1.2,
+            branchProb: 0.018,
+            anastomosisRadius: 10,
+            maxAge: 320,
+            curlStrength: 0.55,
+            strokeWeight: 0.9,
+            bgColor: '#0e1418',
+            colorPalette: ['#d97757', '#e8c468', '#6a9bcc', '#f3eada']
+        };
+        let defaultParams = JSON.parse(JSON.stringify(params));
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // ALGORITHM STATE
+        // ═══════════════════════════════════════════════════════════════════════
+
+        const CANVAS_SIZE = 1100;
+        let tips = [];
+        let trailGrid;       // 2D scalar field of cumulative trail density (for anastomosis & visual)
+        let nodeGrid;        // sparse markers of branching/anastomosis nodes
+        let anastomosisCount = 0;
+        let totalTipsBorn = 0;
+        let isPaused = false;
+        let frameCounter = 0;
+
+        const GRID_RES = 4; // anastomosis lookup grid resolution
+
+        // Color helpers
+        let cYoung, cMature, cMemory, cNode, cBg;
+
+        function hexToRgb(hex) {
+            const m = hex.replace('#', '');
+            return {
+                r: parseInt(m.substring(0, 2), 16),
+                g: parseInt(m.substring(2, 4), 16),
+                b: parseInt(m.substring(4, 6), 16)
+            };
+        }
+
+        function lerpRgb(a, b, t) {
+            return {
+                r: a.r + (b.r - a.r) * t,
+                g: a.g + (b.g - a.g) * t,
+                b: a.b + (b.b - a.b) * t
+            };
+        }
+
+        function refreshColors() {
+            cBg = hexToRgb(params.bgColor);
+            cYoung = hexToRgb(params.colorPalette[0]);
+            cMature = hexToRgb(params.colorPalette[1]);
+            cMemory = hexToRgb(params.colorPalette[2]);
+            cNode = hexToRgb(params.colorPalette[3]);
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // P5.JS SETUP & DRAW LOOP
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function setup() {
+            let canvas = createCanvas(CANVAS_SIZE, CANVAS_SIZE);
+            canvas.parent('canvas-container');
+            const loader = document.querySelector('.loading');
+            if (loader) loader.style.display = 'none';
+            initializeSystem();
+        }
+
+        function initializeSystem() {
+            randomSeed(params.seed);
+            noiseSeed(params.seed);
+
+            refreshColors();
+
+            tips = [];
+            anastomosisCount = 0;
+            totalTipsBorn = 0;
+            frameCounter = 0;
+
+            const gw = Math.ceil(width / GRID_RES);
+            const gh = Math.ceil(height / GRID_RES);
+            trailGrid = new Float32Array(gw * gh);
+            nodeGrid = [];
+
+            // Paint background
+            background(cBg.r, cBg.g, cBg.b);
+
+            // Subtle nutrient field hint — very faint glow in nutrient-rich areas
+            paintSubstrateGlow();
+
+            // Seed initial hyphal tips
+            // Place them on a circle of varied radii — gives organic origin spread
+            const cx = width / 2;
+            const cy = height / 2;
+            for (let i = 0; i < params.initialTips; i++) {
+                const angle = (i / params.initialTips) * TWO_PI + random(-0.3, 0.3);
+                const radius = random(60, Math.min(width, height) * 0.32);
+                const x = cx + cos(angle) * radius;
+                const y = cy + sin(angle) * radius;
+                // Initial direction: slight bias toward outward, but mostly noise-driven later
+                const dir = random(TWO_PI);
+                tips.push(new HyphalTip(x, y, dir, 0));
+                totalTipsBorn++;
+            }
+
+            updateStats();
+        }
+
+        function paintSubstrateGlow() {
+            // Sample nutrient field, paint extremely subtle gradient onto the background.
+            // Costs a single pass — adds depth without dominating the composition.
+            loadPixels();
+            const step = 6;
+            for (let y = 0; y < height; y += step) {
+                for (let x = 0; x < width; x += step) {
+                    const n = sampleNutrient(x, y);
+                    if (n > 0.62) {
+                        const k = (n - 0.62) / 0.38; // 0..1
+                        const tinted = lerpRgb(cBg, cMemory, k * 0.18);
+                        // Paint a small block
+                        for (let dy = 0; dy < step; dy++) {
+                            for (let dx = 0; dx < step; dx++) {
+                                const px = x + dx, py = y + dy;
+                                if (px < width && py < height) {
+                                    const idx = 4 * (py * width + px);
+                                    pixels[idx]     = tinted.r;
+                                    pixels[idx + 1] = tinted.g;
+                                    pixels[idx + 2] = tinted.b;
+                                    pixels[idx + 3] = 255;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            updatePixels();
+        }
+
+        function draw() {
+            if (isPaused) return;
+
+            // Time-step the colony. Multiple sub-steps per frame keep growth visually smooth.
+            const subSteps = 2;
+            for (let s = 0; s < subSteps; s++) {
+                stepColony();
+            }
+            frameCounter++;
+
+            if (frameCounter % 8 === 0) updateStats();
+
+            // Stop drawing once the colony has died out — saves CPU and signals completion.
+            if (tips.length === 0 && frameCounter > 30) {
+                noLoop();
+                renderNodeAccents();
+                updateStats();
+            }
+        }
+
+        function stepColony() {
+            const newTips = [];
+            const gw = Math.ceil(width / GRID_RES);
+
+            for (let i = tips.length - 1; i >= 0; i--) {
+                const t = tips[i];
+                t.grow(newTips);
+                if (t.dead) {
+                    tips.splice(i, 1);
+                }
+            }
+            for (const nt of newTips) tips.push(nt);
+        }
+
+        function renderNodeAccents() {
+            // Small luminous dots at anastomosis & branching nodes — rendered after the colony stabilizes
+            noStroke();
+            for (const n of nodeGrid) {
+                const r = n.kind === 'anastomosis' ? 2.4 : 1.4;
+                const alpha = n.kind === 'anastomosis' ? 200 : 110;
+                fill(cNode.r, cNode.g, cNode.b, alpha);
+                circle(n.x, n.y, r * 2);
+                if (n.kind === 'anastomosis') {
+                    fill(cNode.r, cNode.g, cNode.b, 50);
+                    circle(n.x, n.y, r * 4.5);
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // NUTRIENT FIELD — layered Perlin noise
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function sampleNutrient(x, y) {
+            const s = params.nutrientScale;
+            const n1 = noise(x * s, y * s);
+            const n2 = noise(x * s * 2.7 + 1000, y * s * 2.7 + 1000) * 0.5;
+            const n3 = noise(x * s * 5.3 - 500, y * s * 5.3 - 500) * 0.25;
+            return constrain((n1 + n2 + n3) / 1.75, 0, 1);
+        }
+
+        function nutrientGradient(x, y) {
+            // Numerical gradient — direction of steepest nutrient ascent
+            const eps = 3;
+            const gx = sampleNutrient(x + eps, y) - sampleNutrient(x - eps, y);
+            const gy = sampleNutrient(x, y + eps) - sampleNutrient(x, y - eps);
+            return { gx, gy };
+        }
+
+        function curlAngle(x, y) {
+            // Perlin-driven directional drift — gives curvilinear, organic flow
+            return (noise(x * params.nutrientScale * 1.4 + 7000,
+                          y * params.nutrientScale * 1.4 + 7000) - 0.5) * TWO_PI * 2;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // TRAIL GRID — stigmergic substrate
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function trailIndex(x, y) {
+            const gx = Math.floor(x / GRID_RES);
+            const gy = Math.floor(y / GRID_RES);
+            const gw = Math.ceil(width / GRID_RES);
+            const gh = Math.ceil(height / GRID_RES);
+            if (gx < 0 || gx >= gw || gy < 0 || gy >= gh) return -1;
+            return gy * gw + gx;
+        }
+
+        function depositTrail(x, y, amount) {
+            const idx = trailIndex(x, y);
+            if (idx >= 0) trailGrid[idx] += amount;
+        }
+
+        function readTrail(x, y) {
+            const idx = trailIndex(x, y);
+            return idx >= 0 ? trailGrid[idx] : 0;
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // HYPHAL TIP — autonomous growing agent
+        // ═══════════════════════════════════════════════════════════════════════
+
+        class HyphalTip {
+            constructor(x, y, direction, generation, parentColor = null) {
+                this.x = x;
+                this.y = y;
+                this.px = x;
+                this.py = y;
+                this.dir = direction;
+                this.age = 0;
+                this.generation = generation;
+                this.dead = false;
+                // Each tip carries its own life budget, perturbed to break uniformity
+                this.lifeBudget = params.maxAge * (0.7 + (noise(x * 0.01, y * 0.01) * 0.6));
+                // Energy decreases with age — shapes thinning of strokes
+                this.energy = 1.0;
+                // Slight per-tip stylistic offset — phase for any oscillation
+                this.phase = random(TWO_PI);
+            }
+
+            grow(newTipsBuffer) {
+                if (this.dead) return;
+
+                const nutrient = sampleNutrient(this.x, this.y);
+
+                // Steering forces:
+                // 1. Gradient ascent toward nutrient-rich zones (weight scales with hunger)
+                // 2. Perlin curl — gives the curvilinear, organic feel
+                // 3. Repulsion from very dense trails — encourages exploration
+                const grad = nutrientGradient(this.x, this.y);
+                const gradMag = Math.hypot(grad.gx, grad.gy);
+                let gradAngle = 0;
+                if (gradMag > 0.0001) {
+                    gradAngle = Math.atan2(grad.gy, grad.gx);
+                }
+
+                const curl = curlAngle(this.x, this.y);
+
+                // Trail repulsion — sample 4 cardinal neighbors, steer away from densest
+                const sampleR = 6;
+                const tn = readTrail(this.x, this.y - sampleR);
+                const ts = readTrail(this.x, this.y + sampleR);
+                const te = readTrail(this.x + sampleR, this.y);
+                const tw = readTrail(this.x - sampleR, this.y);
+                const repelX = (tw - te);
+                const repelY = (tn - ts);
+                let repelAngle = 0;
+                let repelMag = Math.hypot(repelX, repelY);
+                if (repelMag > 0.001) {
+                    repelAngle = Math.atan2(repelY, repelX);
+                }
+
+                // Blend angles with cosine-weighted contributions
+                const wGrad = 0.35 * (0.6 + nutrient * 0.4);
+                const wCurl = params.curlStrength;
+                const wRepel = Math.min(0.4, repelMag * 0.05);
+                const wInertia = 1.0;
+
+                let vx = Math.cos(this.dir) * wInertia;
+                let vy = Math.sin(this.dir) * wInertia;
+                vx += Math.cos(gradAngle) * wGrad * gradMag * 60;
+                vy += Math.sin(gradAngle) * wGrad * gradMag * 60;
+                vx += Math.cos(curl) * wCurl * 0.4;
+                vy += Math.sin(curl) * wCurl * 0.4;
+                vx += Math.cos(repelAngle) * wRepel;
+                vy += Math.sin(repelAngle) * wRepel;
+
+                const targetDir = Math.atan2(vy, vx);
+                // Smooth turn toward target — prevents discontinuities
+                this.dir = lerpAngle(this.dir, targetDir, 0.18);
+
+                // Step forward — speed modulated by nutrient (richer = slower, denser exploration)
+                const speed = params.growthRate * (1.4 - nutrient * 0.4);
+                this.px = this.x;
+                this.py = this.y;
+                this.x += Math.cos(this.dir) * speed;
+                this.y += Math.sin(this.dir) * speed;
+
+                // Boundary handling — soft fade-out instead of bounce
+                if (this.x < 4 || this.x > width - 4 || this.y < 4 || this.y > height - 4) {
+                    this.dead = true;
+                    return;
+                }
+
+                // Anastomosis — if we've crossed into a region with strong existing trail, fuse
+                const localTrail = readTrail(this.x, this.y);
+                if (this.age > 8 && localTrail > 1.4) {
+                    // Probability scales with trail strength and proximity threshold
+                    if (random() < Math.min(0.65, localTrail * 0.06) &&
+                        distFromOwnRecent(this) > params.anastomosisRadius * 1.5) {
+                        this.dead = true;
+                        anastomosisCount++;
+                        nodeGrid.push({ x: this.x, y: this.y, kind: 'anastomosis' });
+                        // Render fade-in line to the anastomosis point
+                        drawSegment(this, nutrient, true);
+                        return;
+                    }
+                }
+
+                // Render the segment
+                drawSegment(this, nutrient, false);
+
+                // Deposit trail for stigmergic feedback
+                depositTrail(this.x, this.y, 0.55);
+
+                // Branching decision — weighted by nutrient richness and age maturity
+                const branchWeight = params.branchProb *
+                    (0.4 + nutrient * 1.6) *
+                    (this.age > 10 ? 1 : 0.2) *
+                    (this.generation < 6 ? 1 : 0.5);
+                if (random() < branchWeight && newTipsBuffer.length < 600) {
+                    const branchAngle = this.dir + (random() < 0.5 ? -1 : 1) * random(0.5, 1.2);
+                    newTipsBuffer.push(new HyphalTip(this.x, this.y, branchAngle, this.generation + 1));
+                    nodeGrid.push({ x: this.x, y: this.y, kind: 'branch' });
+                    totalTipsBorn++;
+                }
+
+                this.age++;
+                this.energy = Math.max(0, 1 - this.age / this.lifeBudget);
+                if (this.age >= this.lifeBudget) {
+                    this.dead = true;
+                }
+            }
+        }
+
+        function distFromOwnRecent(tip) {
+            // Approximation: distance traveled this step
+            return Math.hypot(tip.x - tip.px, tip.y - tip.py);
+        }
+
+        function lerpAngle(a, b, t) {
+            // Shortest-path angle interpolation
+            let diff = b - a;
+            while (diff > Math.PI) diff -= 2 * Math.PI;
+            while (diff < -Math.PI) diff += 2 * Math.PI;
+            return a + diff * t;
+        }
+
+        function drawSegment(tip, nutrient, isAnastomosis) {
+            // Color emerges from generation depth + local nutrient
+            // Young/shallow generations -> young color
+            // Deeper generations -> mature -> memory
+            const genT = Math.min(1, tip.generation / 7);
+            let baseColor;
+            if (genT < 0.5) {
+                baseColor = lerpRgb(cYoung, cMature, genT * 2);
+            } else {
+                baseColor = lerpRgb(cMature, cMemory, (genT - 0.5) * 2);
+            }
+            // Nutrient adds slight saturation toward 'memory'
+            const tinted = lerpRgb(baseColor, cMemory, nutrient * 0.12);
+
+            // Thickness modulated by energy, generation, parameter
+            const w = params.strokeWeight *
+                      (0.45 + tip.energy * 0.7) *
+                      (1 - tip.generation * 0.045);
+            const alpha = 180 * (0.45 + tip.energy * 0.55);
+
+            stroke(tinted.r, tinted.g, tinted.b, alpha);
+            strokeWeight(Math.max(0.25, w));
+            line(tip.px, tip.py, tip.x, tip.y);
+
+            // Anastomosis flash — luminous burst at fusion point
+            if (isAnastomosis) {
+                noStroke();
+                fill(cNode.r, cNode.g, cNode.b, 220);
+                circle(tip.x, tip.y, 3.2);
+                fill(cNode.r, cNode.g, cNode.b, 50);
+                circle(tip.x, tip.y, 8);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════════
+        // UI HANDLERS
+        // ═══════════════════════════════════════════════════════════════════════
+
+        function updateParam(name, value) {
+            const numeric = parseFloat(value);
+            params[name] = numeric;
+            const display = document.getElementById(name + '-value');
+            if (display) {
+                if (Number.isInteger(numeric) && numeric === Math.floor(numeric) && Math.abs(numeric) < 10000) {
+                    display.textContent = numeric;
+                } else {
+                    display.textContent = numeric.toFixed(numeric < 0.1 ? 4 : (numeric < 10 ? 2 : 1));
+                }
+            }
+            // Most parameters require regeneration to reshape the colony
+            initializeSystem();
+            loop();
+        }
+
+        function updateColor(name, value) {
+            if (name === 'bgColor') {
+                params.bgColor = value;
+            } else {
+                const idx = parseInt(name.replace('color', '')) - 1;
+                params.colorPalette[idx] = value;
+            }
+            const display = document.getElementById(name + '-value');
+            if (display) display.textContent = value;
+            refreshColors();
+            initializeSystem();
+            loop();
+        }
+
+        function updateStats() {
+            const el = document.getElementById('stats');
+            if (el) {
+                el.textContent = `Strzępki: ${tips.length} · Urodzone: ${totalTipsBorn} · Anastomozy: ${anastomosisCount}`;
+            }
+        }
+
+        function updateSeedDisplay() {
+            document.getElementById('seed-input').value = params.seed;
+        }
+
+        function updateSeed() {
+            const input = document.getElementById('seed-input');
+            const newSeed = parseInt(input.value);
+            if (newSeed && newSeed > 0) {
+                params.seed = newSeed;
+                initializeSystem();
+                loop();
+            } else {
+                updateSeedDisplay();
+            }
+        }
+
+        function previousSeed() {
+            params.seed = Math.max(1, params.seed - 1);
+            updateSeedDisplay();
+            initializeSystem();
+            loop();
+        }
+
+        function nextSeed() {
+            params.seed = params.seed + 1;
+            updateSeedDisplay();
+            initializeSystem();
+            loop();
+        }
+
+        function randomSeedAndUpdate() {
+            params.seed = Math.floor(Math.random() * 999999) + 1;
+            updateSeedDisplay();
+            initializeSystem();
+            loop();
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            document.getElementById('pauseBtn').textContent = isPaused ? 'Wznów' : 'Pauza';
+            if (!isPaused) loop();
+        }
+
+        function downloadPNG() {
+            saveCanvas('mycelial-cognition-seed-' + params.seed, 'png');
+        }
+
+        function resetParameters() {
+            params = JSON.parse(JSON.stringify(defaultParams));
+
+            // Sync UI
+            const ids = ['initialTips', 'nutrientScale', 'growthRate', 'branchProb',
+                         'anastomosisRadius', 'maxAge', 'curlStrength', 'strokeWeight'];
+            for (const id of ids) {
+                document.getElementById(id).value = params[id];
+                const v = params[id];
+                document.getElementById(id + '-value').textContent =
+                    Number.isInteger(v) ? v : v.toFixed(v < 0.1 ? 4 : (v < 10 ? 2 : 1));
+            }
+            document.getElementById('bgColor').value = params.bgColor;
+            document.getElementById('bgColor-value').textContent = params.bgColor;
+            for (let i = 0; i < 4; i++) {
+                document.getElementById('color' + (i + 1)).value = params.colorPalette[i];
+                document.getElementById('color' + (i + 1) + '-value').textContent = params.colorPalette[i];
+            }
+            updateSeedDisplay();
+            refreshColors();
+            initializeSystem();
+            loop();
+        }
+
+        window.addEventListener('load', updateSeedDisplay);
+    </script>
+</body>
+</html>
