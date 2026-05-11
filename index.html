@@ -364,7 +364,7 @@
                 <div class="button-row">
                     <button class="button" onclick="resetParameters()">Reset</button>
                     <button class="button" onclick="togglePause()" id="pauseBtn">Pauza</button>
-                    <button class="button button-full primary" onclick="downloadPNG()">Pobierz PNG</button><button class="button button-full" onclick="copyShareLink(this)" style="margin-top:8px">Kopiuj link</button><button class="button button-full" onclick="copyShareLink(this)" style="margin-top:8px">Kopiuj link</button>
+                    <button class="button button-full primary" onclick="downloadPNG()">Pobierz PNG</button><button class="button button-full" onclick="copyShareLink(this)" style="margin-top:8px">Kopiuj link</button>
                 </div>
             </div>
         </div>
@@ -381,7 +381,7 @@
         // MYCELIAL COGNITION — PARAMETERS
         // ═══════════════════════════════════════════════════════════════════════
 
-        let params = {
+        var params = window.params = {
             seed: 42,
             initialTips: 12,
             nutrientScale: 0.004,
