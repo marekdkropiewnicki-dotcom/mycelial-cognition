@@ -1,26 +1,32 @@
-# Mycelial Cognition
+# MYC·OS — Mycelial Cognition
 
-A generative visualization of a stigmergic hyphal network
-as an act of distributed cognition.
+> Generatywny art viewer. Rozproszone myślenie zapisane jako stygmergiczna sieć strzępek.
 
-Hyphae grow, branch and merge (anastomosis),
-leaving a trace in the field that guides the next generations.
-Time is written in layers of color: birth, maturity, memory.
+**Live:** https://marekdkropiewnicki-dotcom.github.io/mycelial-cognition/
 
-## Run
+Wizualizacja sieci grzybniowej (hyphae) jako akt rozproszonego poznania. Strzępki rosną, rozgałęziają się i łączą (anastomoza), zostawiając ślad w polu odżywczym, który prowadzi kolejne pokolenia. Czas zapisany jest w warstwach koloru: narodziny, dojrzałość, pamięć.
 
-Open `index.html` in a browser,
-or visit the live version on GitHub Pages for this repo.
+## Uruchomienie
 
-## Controls
+Otwórz `index.html` w przeglądarce lub odwiedź live site powyżej. Brak buildu, brak zależności — czysty p5.js z CDN.
 
-- initial number of hyphae
-- growth rate
-- branching probability
-- anastomosis radius
-- color palette
-- Reset / Pause / Download PNG
+## Sterowanie
 
-## License
+- **Ziarno** — deterministyczny seed (Poprzednie / Następne / Losowe / Regeneruj)
+- **Liczba początkowych strzępek** — ile hyf startuje na płótnie
+- **Skala pola odżywczego** — gęstość pola Perlina prowadzącego wzrost
+- **Tempo wzrostu** — długość kroku
+- **Prawdopodobieństwo rozgałęzienia** — szansa na bifurkację
+- **Promień anastomozy** — odległość, w której strzępki się łączą
+- **Paleta** — schemat kolorystyczny
+
+## Stack
+
+- [p5.js 1.7.0](https://p5js.org/) (CDN)
+- Google Fonts: Poppins + Lora
+- Vanilla HTML/CSS, jeden plik (`index.html`)
+- Hosting: GitHub Pages
+
+## Licencja
 
 MIT
